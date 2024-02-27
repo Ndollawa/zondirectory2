@@ -26,8 +26,17 @@ start-dev: configure deploy-frontend init
 
 git:
 	@git add .
-	@git commit -a -$$m=
-	@git push $$origin=
+ifdef m
+	@git commit -a -m "$(m)"
+else
+	@git commit -a
+endif
+ifdef origin
+	@git push $(origin)
+else
+	@git push
+endif
+
 
 .PHONY: deploy
 deploy: deploy-frontend
