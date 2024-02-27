@@ -1,45 +1,48 @@
-import lib "lib";
-import PST "canister:pst";
-import Token "mo:icrc1/ICRC1/Canisters/Token";
-import BTree "mo:stableheapbtreemap/BTree";
-import ICRC1Types "mo:icrc1/ICRC1/Types";
-import Time "mo:base/Time";
-import Principal "mo:base/Principal";
-import CanDBPartition "../storage/CanDBPartition";
 import Nat64 "mo:base/Nat64";
 import Int "mo:base/Int";
-import fractions "./fractions";
 import Debug "mo:base/Debug";
 import Nat "mo:base/Nat";
 import Array "mo:base/Array";
-import MyCycles "mo:nacdb/Cycles";
-import Common "../storage/common";
+import Time "mo:base/Time";
+import Principal "mo:base/Principal";
 
-shared({caller = initialOwner}) actor class Payments() = this {
+import Token "mo:icrc1/ICRC1/Canisters/Token";
+import BTree "mo:stableheapbtreemap/BTree";
+import ICRC1Types "mo:icrc1/ICRC1/Types";
+import MyCycles "mo:nacdb/Cycles";
+import CanDBPartition "../../storage/CanDBPartition";
+
+import PST "canister:pst";
+
+import Common "../../../storage/common";
+import lib "../../utils/libs/helpers/canDB.helper";
+import fractions "../../utils/libs/helpers/fractions.helper";
+
+shared ({ caller = initialOwner }) actor class Payments() = this {
   /// Owners ///
 
-  stable var initialized: Bool = false;
+  stable var initialized : Bool = false;
   stable var owners = [initialOwner];
 
-  func checkCaller(caller: Principal) {
-    if (Array.find(owners, func(e: Principal): Bool { e == caller; }) == null) {
+  func checkCaller(caller : Principal) {
+    if (Array.find(owners, func(e : Principal) : Bool { e == caller }) == null) {
       Debug.trap("order: not allowed");
     };
   };
 
-  public shared({caller = caller}) func setOwners(_owners: [Principal]): async () {
+  public shared ({ caller = caller }) func setOwners(_owners : [Principal]) : async () {
     checkCaller(caller);
 
     owners := _owners;
   };
 
-  public query func getOwners(): async [Principal] { owners };
+  public query func getOwners() : async [Principal] { owners };
 
-  public shared({ caller }) func init(_owners: [Principal]): async () {
+  public shared ({ caller }) func init(_owners : [Principal]) : async () {
     checkCaller(caller);
     ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles); // TODO: another number of cycles?
     if (initialized) {
-        Debug.trap("already initialized");
+      Debug.trap("already initialized");
     };
 
     owners := _owners;
@@ -55,7 +58,7 @@ shared({caller = initialOwner}) actor class Payments() = this {
   // Also consider using https://github.com/dfinity/examples/tree/master/motoko/invoice-canister
   // or https://github.com/research-ag/motoko-lib/blob/main/src/TokenHandler.mo
 
-  stable var ledger: Token.Token = actor(nativeIPCToken);
+  stable var ledger : Token.Token = actor (nativeIPCToken);
 
   /// Shares ///
 
@@ -65,49 +68,59 @@ shared({caller = initialOwner}) actor class Payments() = this {
   stable var buyerAffiliateShare = fractions.fdiv(1, 10); // 10%
   stable var sellerAffiliateShare = fractions.fdiv(3, 20); // 15%
 
-  public query func getSalesOwnersShare(): async fractions.Fraction { salesOwnersShare };
-  public query func getUpvotesOwnersShare(): async fractions.Fraction { upvotesOwnersShare };
-  public query func getUploadOwnersShare(): async fractions.Fraction { uploadOwnersShare };
-  public query func getBuyerAffiliateShare(): async fractions.Fraction { buyerAffiliateShare };
-  public query func getSellerAffiliateShare(): async fractions.Fraction { sellerAffiliateShare };
+  public query func getSalesOwnersShare() : async fractions.Fraction {
+    salesOwnersShare;
+  };
+  public query func getUpvotesOwnersShare() : async fractions.Fraction {
+    upvotesOwnersShare;
+  };
+  public query func getUploadOwnersShare() : async fractions.Fraction {
+    uploadOwnersShare;
+  };
+  public query func getBuyerAffiliateShare() : async fractions.Fraction {
+    buyerAffiliateShare;
+  };
+  public query func getSellerAffiliateShare() : async fractions.Fraction {
+    sellerAffiliateShare;
+  };
 
-  public shared({caller}) func setSalesOwnersShare(_share: fractions.Fraction) {
+  public shared ({ caller }) func setSalesOwnersShare(_share : fractions.Fraction) {
     checkCaller(caller);
-    
+
     salesOwnersShare := _share;
   };
 
-  public shared({caller}) func setUpvotesOwnersShare(_share: fractions.Fraction) {
+  public shared ({ caller }) func setUpvotesOwnersShare(_share : fractions.Fraction) {
     checkCaller(caller);
-    
+
     upvotesOwnersShare := _share;
   };
 
-  public shared({caller}) func setUploadOwnersShare(_share: fractions.Fraction) {
+  public shared ({ caller }) func setUploadOwnersShare(_share : fractions.Fraction) {
     checkCaller(caller);
-    
+
     uploadOwnersShare := _share;
   };
 
-  public shared({caller}) func setBuyerAffiliateShare(_share: fractions.Fraction) {
+  public shared ({ caller }) func setBuyerAffiliateShare(_share : fractions.Fraction) {
     checkCaller(caller);
-    
+
     buyerAffiliateShare := _share;
   };
 
-  public shared({caller}) func setSellerAffiliateShare(_share: fractions.Fraction) {
+  public shared ({ caller }) func setSellerAffiliateShare(_share : fractions.Fraction) {
     checkCaller(caller);
-    
+
     sellerAffiliateShare := _share;
   };
 
   /////////////////
 
   type IncomingPayment = {
-    kind: { #payment; #donation };
-    itemId: Nat;
-    amount: ICRC1Types.Balance;
-    var time: ?Time.Time;
+    kind : { #payment; #donation };
+    itemId : Nat;
+    amount : ICRC1Types.Balance;
+    var time : ?Time.Time;
   };
 
   // func serializePaymentAttr(payment: IncomingPayment): Entity.AttributeValue {
@@ -179,7 +192,7 @@ shared({caller = initialOwner}) actor class Payments() = this {
   //     kind = kind;
   //     itemId = itemId;
   //     amount = amount;
-  //   };    
+  //   };
   // };
 
   // func deserializePayment(map: Entity.AttributeMap): IncomingPayment {
@@ -187,33 +200,38 @@ shared({caller = initialOwner}) actor class Payments() = this {
   //   switch (v) {
   //     case (?v) { deserializePaymentAttr(v) };
   //     case _ { Debug.trap("map not found") };
-  //   };    
+  //   };
   // };
 
   // TODO: clean space by removing smallest payments.
-  stable var currentPayments: BTree.BTree<Principal, IncomingPayment> = BTree.init<Principal, IncomingPayment>(null); // TODO: Delete old ones.
-  
-  // TODO: clean space by removing smallest debts.
-  stable var ourDebts: BTree.BTree<Principal, OutgoingPayment> = BTree.init<Principal, OutgoingPayment>(null);
+  stable var currentPayments : BTree.BTree<Principal, IncomingPayment> = BTree.init<Principal, IncomingPayment>(null); // TODO: Delete old ones.
 
-  public query func getOurDebt(user: Principal): async Nat {
+  // TODO: clean space by removing smallest debts.
+  stable var ourDebts : BTree.BTree<Principal, OutgoingPayment> = BTree.init<Principal, OutgoingPayment>(null);
+
+  public query func getOurDebt(user : Principal) : async Nat {
     switch (BTree.get(ourDebts, Principal.compare, user)) {
       case (?debt) { debt.amount };
       case (null) { 0 };
     };
   };
 
-  func indebt(to: Principal, amount: Nat) {
+  func indebt(to : Principal, amount : Nat) {
     if (amount == 0) {
       return;
     };
-    ignore BTree.update<Principal, OutgoingPayment>(ourDebts, Principal.compare, to, func (old: ?OutgoingPayment): OutgoingPayment {
-      let sum = switch (old) {
-        case (?old) { old.amount + amount };
-        case (null) { amount };
-      };
-      { amount = sum; var time = null };
-    });
+    ignore BTree.update<Principal, OutgoingPayment>(
+      ourDebts,
+      Principal.compare,
+      to,
+      func(old : ?OutgoingPayment) : OutgoingPayment {
+        let sum = switch (old) {
+          case (?old) { old.amount + amount };
+          case (null) { amount };
+        };
+        { amount = sum; var time = null };
+      },
+    );
   };
 
   // TODO: On non-existent payment it proceeds successful. Is it OK?
@@ -264,21 +282,24 @@ shared({caller = initialOwner}) actor class Payments() = this {
   var totalDividends = 0;
   var totalDividendsPaid = 0; // actually paid sum
   // TODO: Set a heavy transfer fee of the PST to ensure that `lastTotalDivedends` doesn't take much memory.
-  stable var lastTotalDivedends: BTree.BTree<Principal, Nat> = BTree.init<Principal, Nat>(null);
+  stable var lastTotalDivedends : BTree.BTree<Principal, Nat> = BTree.init<Principal, Nat>(null);
 
-  func _dividendsOwing(_account: Principal): async Nat {
+  func _dividendsOwing(_account : Principal) : async Nat {
     let lastTotal = switch (BTree.get(lastTotalDivedends, Principal.compare, _account)) {
       case (?value) { value };
       case (null) { 0 };
     };
-    let _newDividends = Int.abs((totalDividends: Int) - lastTotal);
+    let _newDividends = Int.abs((totalDividends : Int) - lastTotal);
     // rounding down
-    let balance = await PST.icrc1_balance_of({owner = _account; subaccount = null});
+    let balance = await PST.icrc1_balance_of({
+      owner = _account;
+      subaccount = null;
+    });
     let total = await PST.icrc1_total_supply();
     balance * _newDividends / total;
   };
 
-  func recalculateShareholdersDebt(_amount: Nat, _buyerAffiliate: ?Principal, _sellerAffiliate: ?Principal) {
+  func recalculateShareholdersDebt(_amount : Nat, _buyerAffiliate : ?Principal, _sellerAffiliate : ?Principal) {
     // Affiliates are delivered by frontend.
     // address payable _buyerAffiliate = affiliates[msg.sender];
     // address payable _sellerAffiliate = affiliates[_author];
@@ -311,11 +332,11 @@ shared({caller = initialOwner}) actor class Payments() = this {
   /// Outgoing Payments ///
 
   type OutgoingPayment = {
-    amount: ICRC1Types.Balance;
-    var time: ?Time.Time;
+    amount : ICRC1Types.Balance;
+    var time : ?Time.Time;
   };
 
-  public shared({caller}) func payout(subaccount: ?ICRC1Types.Subaccount) {
+  public shared ({ caller }) func payout(subaccount : ?ICRC1Types.Subaccount) {
     switch (BTree.get<Principal, OutgoingPayment>(ourDebts, Principal.compare, caller)) {
       case (?payment) {
         let time = switch (payment.time) {
@@ -324,12 +345,12 @@ shared({caller = initialOwner}) actor class Payments() = this {
             let time = Time.now();
             payment.time := ?time;
             time;
-          }
+          };
         };
         let fee = await ledger.icrc1_fee();
         let result = await ledger.icrc1_transfer({
           from_subaccount = null;
-          to = {owner = caller; subaccount = subaccount};
+          to = { owner = caller; subaccount = subaccount };
           amount = payment.amount - fee;
           fee = null;
           memo = null;
@@ -338,6 +359,6 @@ shared({caller = initialOwner}) actor class Payments() = this {
         ignore BTree.delete<Principal, OutgoingPayment>(ourDebts, Principal.compare, caller);
       };
       case (null) {};
-    }
+    };
   };
-}
+};

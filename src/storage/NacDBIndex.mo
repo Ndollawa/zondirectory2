@@ -1,45 +1,47 @@
-import Cycles "mo:base/ExperimentalCycles";
-import Nac "mo:nacdb/NacDB";
-import StableBuffer "mo:stable-buffer/StableBuffer";
-import Principal "mo:base/Principal";
-import Debug "mo:base/Debug";
-import MyCycles "mo:nacdb/Cycles";
 import Array "mo:base/Array";
 import Blob "mo:base/Blob";
 import Iter "mo:base/Iter";
 import Result "mo:base/Result";
+import Principal "mo:base/Principal";
+import Debug "mo:base/Debug";
+import Cycles "mo:base/ExperimentalCycles";
+
+import StableBuffer "mo:stable-buffer/StableBuffer";
 import Buffer "mo:stable-buffer/StableBuffer";
+
+import Nac "mo:nacdb/NacDB";
+import MyCycles "mo:nacdb/Cycles";
 import Partition "./NacDBPartition";
 import Common "common";
 
-shared({caller = initialOwner}) actor class NacDBIndex() = this {
+shared ({ caller = initialOwner }) actor class NacDBIndex() = this {
     stable var owners = [initialOwner];
 
-    func checkCaller(caller: Principal) {
-        if (Array.find(owners, func(e: Principal): Bool { e == caller; }) == null) {
+    func checkCaller(caller : Principal) {
+        if (Array.find(owners, func(e : Principal) : Bool { e == caller }) == null) {
             Debug.trap("NacDBIndex: not allowed");
-        }
+        };
     };
 
-    public shared({caller = caller}) func setOwners(_owners: [Principal]): async () {
+    public shared ({ caller = caller }) func setOwners(_owners : [Principal]) : async () {
         checkCaller(caller);
 
         owners := _owners;
     };
 
-    public query func getOwners(): async [Principal] { owners };
+    public query func getOwners() : async [Principal] { owners };
 
-    func ownersOrSelf(): [Principal] {
+    func ownersOrSelf() : [Principal] {
         let buf = Buffer.fromArray<Principal>(owners);
         Buffer.add(buf, Principal.fromActor(this));
         Buffer.toArray(buf);
     };
-    
-    stable var dbIndex: Nac.DBIndex = Nac.createDBIndex(Common.dbOptions);
+
+    stable var dbIndex : Nac.DBIndex = Nac.createDBIndex(Common.dbOptions);
 
     stable var initialized = false;
 
-    public shared({caller}) func init(_owners: [Principal]) : async () {
+    public shared ({ caller }) func init(_owners : [Principal]) : async () {
         checkCaller(caller);
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
         if (initialized) {
@@ -52,15 +54,18 @@ shared({caller = initialOwner}) actor class NacDBIndex() = this {
         initialized := true;
     };
 
-    public query func getCanisters(): async [Principal] {
+    public query func getCanisters() : async [Principal] {
         // ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
-        let iter = Iter.map(Nac.getCanisters(dbIndex).vals(), func(x: Nac.PartitionCanister): Principal {
-            Principal.fromActor(x);
-        });
+        let iter = Iter.map(
+            Nac.getCanisters(dbIndex).vals(),
+            func(x : Nac.PartitionCanister) : Principal {
+                Principal.fromActor(x);
+            },
+        );
         Iter.toArray(iter);
     };
 
-    public shared({caller}) func createPartition(): async Principal {
+    public shared ({ caller }) func createPartition() : async Principal {
         checkCaller(caller);
 
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
@@ -68,21 +73,25 @@ shared({caller = initialOwner}) actor class NacDBIndex() = this {
         Principal.fromActor(await Partition.Partition(ownersOrSelf()));
     };
 
-    public shared({caller}) func createPartitionImpl(): async Principal {
+    public shared ({ caller }) func createPartitionImpl() : async Principal {
         checkCaller(caller);
 
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
         await* Nac.createPartitionImpl(this, dbIndex);
     };
 
-    public shared({caller}) func createSubDB(guid: [Nat8], {userData: Text})
-        : async {inner: (Principal, Nac.InnerSubDBKey); outer: (Principal, Nac.OuterSubDBKey)}
-    {
+    public shared ({ caller }) func createSubDB(guid : [Nat8], { userData : Text }) : async {
+        inner : (Principal, Nac.InnerSubDBKey);
+        outer : (Principal, Nac.OuterSubDBKey);
+    } {
         checkCaller(caller);
 
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
-        let r = await* Nac.createSubDB(Blob.fromArray(guid), {index = this; dbIndex; dbOptions = Common.dbOptions; userData});
-        { inner = (Principal.fromActor(r.inner.0), r.inner.1); outer = (Principal.fromActor(r.outer.0), r.outer.1) };
+        let r = await* Nac.createSubDB(Blob.fromArray(guid), { index = this; dbIndex; dbOptions = Common.dbOptions; userData });
+        {
+            inner = (Principal.fromActor(r.inner.0), r.inner.1);
+            outer = (Principal.fromActor(r.outer.0), r.outer.1);
+        };
     };
 
     // Management methods //
@@ -94,7 +103,7 @@ shared({caller = initialOwner}) actor class NacDBIndex() = this {
         //   canister_id : CanisterId;
         // });
         install_code : ({
-        mode : { #install; #reinstall; #upgrade };
+            mode : { #install; #reinstall; #upgrade };
             canister_id : CanisterId;
             wasm_module : Blob;
             arg : Blob;
@@ -103,64 +112,69 @@ shared({caller = initialOwner}) actor class NacDBIndex() = this {
         deposit_cycles : ({ canister_id : Principal }) -> async ();
     };
 
-    public shared({caller}) func upgradeCanistersInRange(wasm: Blob, inclusiveBottom: Nat, exclusiveTop: Nat) : async ()
-    {
+    public shared ({ caller }) func upgradeCanistersInRange(wasm : Blob, inclusiveBottom : Nat, exclusiveTop : Nat) : async () {
         checkCaller(caller);
 
         let canisters = Nac.getCanisters(dbIndex);
         let ic : Management = actor ("aaaaa-aa");
-        for (i in Iter.range(inclusiveBottom, exclusiveTop-1)) {
+        for (i in Iter.range(inclusiveBottom, exclusiveTop -1)) {
             await ic.install_code({
-                arg = to_candid([]);
+                arg = to_candid ([]);
                 wasm_module = wasm;
                 mode = #upgrade;
                 canister_id = Principal.fromActor(canisters[i]);
             });
-        }
+        };
     };
 
-    public shared({caller}) func deleteSubDB(guid: [Nat8], {outerCanister: Principal; outerKey: Nac.OuterSubDBKey}) : async () {
+    public shared ({ caller }) func deleteSubDB(guid : [Nat8], { outerCanister : Principal; outerKey : Nac.OuterSubDBKey }) : async () {
         checkCaller(caller);
 
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
-        let outer: Nac.OuterCanister = actor (Principal.toText(outerCanister));
-        await* Nac.deleteSubDB(Blob.fromArray(guid), {dbOptions = Common.dbOptions; dbIndex; outerCanister = outer; outerKey});
+        let outer : Nac.OuterCanister = actor (Principal.toText(outerCanister));
+        await* Nac.deleteSubDB(Blob.fromArray(guid), { dbOptions = Common.dbOptions; dbIndex; outerCanister = outer; outerKey });
     };
 
-    public shared({caller}) func delete(guid: [Nat8], {outerCanister: Principal; outerKey: Nac.OuterSubDBKey; sk: Nac.SK}): async () {
+    public shared ({ caller }) func delete(guid : [Nat8], { outerCanister : Principal; outerKey : Nac.OuterSubDBKey; sk : Nac.SK }) : async () {
         checkCaller(caller);
 
-        let outer: Nac.OuterCanister = actor (Principal.toText(outerCanister));
+        let outer : Nac.OuterCanister = actor (Principal.toText(outerCanister));
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
-        await* Nac.delete(Blob.fromArray(guid), {dbIndex; outerCanister = outer; outerKey; sk});
+        await* Nac.delete(Blob.fromArray(guid), { dbIndex; outerCanister = outer; outerKey; sk });
     };
 
-    public shared({caller}) func insert(guid: [Nat8], {
-        outerCanister: Principal;
-        outerKey: Nac.OuterSubDBKey;
-        sk: Nac.SK;
-        value: Nac.AttributeValue;
-    }) : async Result.Result<{inner: (Principal, Nac.InnerSubDBKey); outer: (Principal, Nac.OuterSubDBKey)}, Text> {
+    public shared ({ caller }) func insert(
+        guid : [Nat8],
+        {
+            outerCanister : Principal;
+            outerKey : Nac.OuterSubDBKey;
+            sk : Nac.SK;
+            value : Nac.AttributeValue;
+        },
+    ) : async Result.Result<{ inner : (Principal, Nac.InnerSubDBKey); outer : (Principal, Nac.OuterSubDBKey) }, Text> {
         checkCaller(caller);
 
         ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
-        let result = await* Nac.insert(Blob.fromArray(guid), {
-            indexCanister = Principal.fromActor(this);
-            outerCanister = outerCanister;
-            dbIndex;
-            outerKey;
-            sk;
-            value;
-        });
+        let result = await* Nac.insert(
+            Blob.fromArray(guid),
+            {
+                indexCanister = Principal.fromActor(this);
+                outerCanister = outerCanister;
+                dbIndex;
+                outerKey;
+                sk;
+                value;
+            },
+        );
         switch (result) {
             case (#ok { inner; outer }) {
-                let innerx: Principal = Principal.fromActor(inner.0);
-                let outerx: Principal = Principal.fromActor(outer.0);
+                let innerx : Principal = Principal.fromActor(inner.0);
+                let outerx : Principal = Principal.fromActor(outer.0);
                 #ok { inner = (innerx, inner.1); outer = (outerx, outer.1) };
             };
             case (#err err) {
                 #err err;
-            }
+            };
         };
     };
-}
+};

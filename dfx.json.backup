@@ -27,7 +27,9 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "dependencies": ["backend","internet_identity"],
+      "dependencies": [
+        "backend"
+      ],
       "source": [
         "src/frontend/assets",
         "dist/frontend/"
@@ -37,7 +39,9 @@
     "payments": {
       "main": "src/backend/canisters/payments/main.mo",
       "type": "motoko",
-      "dependencies": ["pst"]
+      "dependencies": [
+        "pst"
+      ]
     },
     "pst": {
       "main": "src/backend/canisters/pst/main.mo",
@@ -67,7 +71,7 @@
       "type": "rust",
       "candid": "src/ic_eth/ic_eth.did",
       "package": "ic_eth"
-    },    
+    },
     "internet_identity": {
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",

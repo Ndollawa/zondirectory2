@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "webpack",
+    "setup": "dfx canister create --all && dfx generate backend && dfx deploy",
     "prebuild": "dfx generate",
     "start": "webpack serve --mode development --env development",
     "deploy:local": "dfx deploy --network=local",

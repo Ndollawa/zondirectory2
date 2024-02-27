@@ -6,7 +6,28 @@ SHELL=/bin/bash
 NETWORK=local
 FOUNDER = $(shell dfx identity get-principal)
 
-BACKEND_CANISTERS = main order personhood payments pst CanDBIndex NacDBIndex ic_eth internet_identity
+BACKEND_CANISTERS = backend order personhood payments pst CanDBIndex NacDBIndex ic_eth 			#internet_identity
+
+setup-mops:
+	sudo npm i -g ic-mops
+	sudo mops i
+
+setup-cargo:
+	sudo curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+	source "$HOME/.cargo/env"
+	sudo cargo install cargo-audit
+
+start-dfx:
+		dfx start --background --clean
+		
+init-setup: setup-mops setup-cargo configure  deploy-frontend init deploy-backend
+
+start-dev: configure deploy-frontend init
+
+git:
+	@git add .
+	@git commit -a -$$m=
+	@git push $$origin=
 
 .PHONY: deploy
 deploy: deploy-frontend
@@ -16,14 +37,13 @@ build: build-frontend
 
 .PHONY: configure
 configure:
-	mops i
 	for i in $(BACKEND_CANISTERS); do \
 	  dfx canister create --network $(NETWORK) $$i; \
 	done
 	dfx canister create --network $(NETWORK) frontend
 	env -i scripts/read-env.sh
 	dfx build internet_identity
-	dfx deploy --network $(NETWORK) main
+	dfx deploy --network $(NETWORK) backend
 	dfx generate
 
 .PHONY: install-backend
@@ -44,7 +64,7 @@ build-frontend: do-build-frontend CanDBPartition.wasm NacDBPartition.wasm
 
 .PHONY: do-build-backend
 do-build-backend:
-	dfx build main
+	dfx build backend
 
 .PHONY: do-build-frontend
 do-build-frontend:
@@ -72,12 +92,12 @@ upgrade-partitions:
 
 .PHONY: init
 init:
-	dfx ledger fabricate-cycles --amount 1000000000 --canister main
-	dfx canister --network $(NETWORK) call main init '()'
-	. .env && dfx canister call --network $(NETWORK) payments init "(vec { principal \"$(FOUNDER)\"; principal \"$$CANISTER_ID_MAIN\" })"
+	dfx ledger fabricate-cycles --amount 1000000000 --canister backend
+	dfx canister --network $(NETWORK) call backend init '()'
+	. .env && dfx canister call --network $(NETWORK) payments init "(vec { principal \"$(FOUNDER)\"; principal \"$$CANISTER_MAIN\" })"
 	. .env && dfx canister call --network $(NETWORK) CanDBIndex init "(vec { principal \"$(FOUNDER)\"; principal \"$$CANISTER_ID_MAIN\"; principal \"$$CANISTER_ID_ORDER\"; principal \"$$CANISTER_ID_PERSONHOOD\" })"
 	. .env && dfx canister call --network $(NETWORK) NacDBIndex init "(vec { principal \"$(FOUNDER)\"; principal \"$$CANISTER_ID_MAIN\"; principal \"$$CANISTER_ID_ORDER\" })"
 	. .env && dfx canister call --network $(NETWORK) order init "(vec { principal \"$(FOUNDER)\"; principal \"$$CANISTER_ID_MAIN\"; principal \"$$CANISTER_ID_ORDER\" })"
-	mainItem=`dfx canister call --network $(NETWORK) main createItemData \
-	  '(record { communal = true; price = 0.0; locale = "en"; title = "The homepage"; description = ""; details = variant { folder = null } })'`; \
-	  dfx canister call --network $(NETWORK) main setRootItem "$$mainItem"
+	mainItem=`dfx canister call --network $(NETWORK) backend createItemData \
+	  '(record { price = 0.0; locale = "en"; title = "The homepage"; description = ""; details = variant { communalFolder = null } })'`; \
+	  dfx canister call --network $(NETWORK) backend setRootItem "$$mainItem"
