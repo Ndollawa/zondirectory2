@@ -21,7 +21,7 @@ import Entity "mo:candb/Entity";
 import Common "../storage/common";
 import NacDbPartition "../storage/NacDBPartition";
 
-import Payments "payments";
+import Payments "canisters/payments/main";
 import lib "utils/libs/helpers/canDB.helper";
 import config "utils/configs/passport.config";
 
