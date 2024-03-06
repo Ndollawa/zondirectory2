@@ -10,13 +10,13 @@ import Token "mo:icrc1/ICRC1/Canisters/Token";
 import BTree "mo:stableheapbtreemap/BTree";
 import ICRC1Types "mo:icrc1/ICRC1/Types";
 import MyCycles "mo:nacdb/Cycles";
-import CanDBPartition "../../storage/CanDBPartition";
+import CanDBPartition "../../../storage/CanDBPartition";
 
 import PST "canister:pst";
 
-import Common "../../../storage/common";
-import lib "../../utils/libs/helpers/canDB.helper";
-import fractions "../../utils/libs/helpers/fractions.helper";
+import CanDBConfig "../../libs/configs/canDB.config";
+import CanDBHelper "../../libs/utils/helpers/canDB.helper";
+import fractions "../../libs/utils/helpers/fractions.helper";
 
 shared ({ caller = initialOwner }) actor class Payments() = this {
   /// Owners ///
@@ -40,13 +40,13 @@ shared ({ caller = initialOwner }) actor class Payments() = this {
 
   public shared ({ caller }) func init(_owners : [Principal]) : async () {
     checkCaller(caller);
-    ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles); // TODO: another number of cycles?
+    ignore MyCycles.topUpCycles(CanDBConfig.dbOptions.partitionCycles); // TODO: another number of cycles?
     if (initialized) {
       Debug.trap("already initialized");
     };
 
     owners := _owners;
-    MyCycles.addPart(Common.dbOptions.partitionCycles);
+    MyCycles.addPart(CanDBConfig.dbOptions.partitionCycles);
     initialized := true;
   };
 
@@ -241,7 +241,7 @@ shared ({ caller = initialOwner }) actor class Payments() = this {
   //       let itemKey = "i/" # Nat.toText(payment.itemId);
   //       switch (await CanDBPartition.getAttribute({sk = itemKey}, "i")) {
   //         case (?itemRepr) {
-  //           let item = lib.deserializeItem(itemRepr);
+  //           let item = CanDBHelper.deserializeItem(itemRepr);
   //           let time = switch (payment.time) {
   //             case (?time) { time };
   //             case (null) {

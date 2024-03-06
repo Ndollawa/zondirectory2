@@ -17,10 +17,13 @@ setup-cargo:
 	source "$HOME/.cargo/env"
 	sudo cargo install cargo-audit
 
+internet_identity: 
+		dfx canister create internet_identity
+
 start-dfx:
 		dfx start --background --clean
 		
-init-setup: setup-mops setup-cargo configure  deploy-frontend init deploy-backend
+init-setup: setup-mops setup-cargo internet_identity configure  deploy-frontend init deploy-backend
 
 start-dev: configure deploy-frontend init
 
@@ -54,6 +57,8 @@ configure:
 	dfx build internet_identity
 	dfx deploy --network $(NETWORK) backend
 	dfx generate
+	dfx generate CanDBPartition
+	dfx generate NacDBPartition
 
 .PHONY: install-backend
 install-backend:

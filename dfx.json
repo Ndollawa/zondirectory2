@@ -13,6 +13,43 @@
         "ic_eth"
       ]
     },
+    "ic_eth": {
+      "type": "rust",
+      "candid": "src/ic_eth/ic_eth.did",
+      "package": "ic_eth"
+    },  
+    "CanDBIndex": {
+      "main": "src/storage/CanDBIndex.mo",
+      "type": "motoko",
+      "dependencies": ["ic_eth"]
+    },
+    "NacDBIndex": {
+      "main": "src/storage/NacDBIndex.mo",
+      "type": "motoko",
+      "dependencies": ["ic_eth"]
+    },
+    "CanDBPartition": {
+      "main": "src/storage/CanDBPartition.mo",
+      "type": "motoko",
+      "dependencies": ["ic_eth"]
+    },
+    "NacDBPartition": {
+      "main": "src/storage/NacDBPartition.mo",
+      "type": "motoko",
+      "dependencies": ["ic_eth"]
+    },  
+    "internet_identity": {
+      "type": "custom",
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
+      "shrink": false,
+      "remote": {
+        "candid": "internet_identity.did",
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      }
+    },
     "order": {
       "main": "src/backend/canisters/order/main.mo",
       "type": "motoko",
@@ -43,42 +80,17 @@
       "main": "src/backend/canisters/pst/main.mo",
       "type": "motoko"
     },
-    "CanDBIndex": {
-      "main": "src/storage/CanDBIndex.mo",
-      "type": "motoko",
-      "dependencies": ["ic_eth"]
+    "auth": {
+      "main": "src/backend/canisters/auth/main.mo",
+      "type": "motoko"
     },
-    "NacDBIndex": {
-      "main": "src/storage/NacDBIndex.mo",
-      "type": "motoko",
-      "dependencies": ["ic_eth"]
+    "items": {
+      "main": "src/backend/canisters/items/main.mo",
+      "type": "motoko"
     },
-    "CanDBPartition": {
-      "main": "src/storage/CanDBPartition.mo",
-      "type": "motoko",
-      "dependencies": ["ic_eth"]
-    },
-    "NacDBPartition": {
-      "main": "src/storage/NacDBPartition.mo",
-      "type": "motoko",
-      "dependencies": ["ic_eth"]
-    },
-    "ic_eth": {
-      "type": "rust",
-      "candid": "src/ic_eth/ic_eth.did",
-      "package": "ic_eth"
-    },    
-    "internet_identity": {
-      "type": "custom",
-      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
-      "shrink": false,
-      "remote": {
-        "candid": "internet_identity.did",
-        "id": {
-          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-        }
-      }
+    "folders": {
+      "main": "src/backend/canisters/folders/main.mo",
+      "type": "motoko"
     }
   },
   "defaults": {
@@ -91,7 +103,7 @@
   "version": 1,
   "networks": {
     "local": {
-      "bind": "localhost:8000",
+      "bind": "localhost:8001",
       "type": "ephemeral"
     }
   }

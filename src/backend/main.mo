@@ -18,12 +18,12 @@ import CanDBIndex "canister:CanDBIndex";
 import CanDBPartition "../storage/CanDBPartition";
 import MyCycles "mo:nacdb/Cycles";
 import Entity "mo:candb/Entity";
-import Common "../storage/common";
+import CanDBConfig "libs/configs/canDB.config";
 import NacDbPartition "../storage/NacDBPartition";
 
 import Payments "canisters/payments/main";
-import lib "utils/libs/helpers/canDB.helper";
-import config "utils/configs/passport.config";
+import lib "libs/utils/helpers/canDB.helper";
+import config "libs/configs/passport.config";
 
 shared actor class ZonBackend() = this {
   /// External Canisters ///
@@ -43,7 +43,7 @@ shared actor class ZonBackend() = this {
   stable var initialized : Bool = false;
 
   public shared ({ caller }) func init() : async () {
-    ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles);
+    ignore MyCycles.topUpCycles(CanDBConfig.dbOptions.partitionCycles);
 
     if (initialized) {
       Debug.trap("already initialized");

@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.2.0",
   "description": "Internet Computer starter application",
+  "author": "",
+  "license": "UNLICENSED",
   "keywords": [
     "Internet Computer",
     "Motoko",
@@ -60,7 +62,7 @@
     "webpack-dev-server": "^4.8.1"
   },
   "engines": {
-    "node": "^12 || ^14 || ^16 || ^18"
+    "node": "^21"
   },
   "browserslist": [
     "last 2 chrome version",

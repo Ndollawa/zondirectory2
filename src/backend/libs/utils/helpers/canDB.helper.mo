@@ -20,7 +20,7 @@ import NacDBPartition "../../../../storage/NacDBPartition";
 import RBT "mo:stable-rbtree/StableRBTree";
 import Entity "mo:candb/Entity";
 import Reorder "mo:NacDBReorder/Reorder";
-import config "../../configs/passport.config";
+import PassportConfig "../../configs/passport.config";
 
 module {
   // let phoneNumberVerificationCanisterId = "gzqxf-kqaaa-aaaak-qakba-cai"; // https://docs.nfid.one/developer/credentials/mobile-phone-number-credential

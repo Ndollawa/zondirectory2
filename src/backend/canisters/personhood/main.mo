@@ -7,8 +7,8 @@ import V "mo:passport-client-dfinity/lib/Verifier";
 
 import CanDBIndex "canister:CanDBIndex";
 import ic_eth "canister:ic_eth";
-import lib "../../utils/libs/helpers/canDB.helper";
-import passportConfig "../../utils/configs/passport.config";
+import CanDBHelper "../../libs/utils/helpers/canDB.helper";
+import passportConfig "../../libs/configs/passport.config";
 
 actor Personhood {
     /// Shared ///

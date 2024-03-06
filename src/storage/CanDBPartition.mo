@@ -1,9 +1,4 @@
 import Array "mo:base/Array";
-import CA "mo:candb/CanisterActions";
-import Entity "mo:candb/Entity";
-import CanDB "mo:candb/CanDB";
-import Multi "mo:CanDBMulti/Multi";
-import RBT "mo:stable-rbtree/StableRBTree";
 import Principal "mo:base/Principal";
 import Bool "mo:base/Bool";
 import Debug "mo:base/Debug";
@@ -11,7 +6,13 @@ import Text "mo:base/Text";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
-import lib "../backend/utils/libs/helpers/canDB.helper";
+
+import CA "mo:candb/CanisterActions";
+import Entity "mo:candb/Entity";
+import CanDB "mo:candb/CanDB";
+import Multi "mo:CanDBMulti/Multi";
+import RBT "mo:stable-rbtree/StableRBTree";
+import CanDBHelper "../backend/libs/utils/helpers/canDB.helper";
 
 shared actor class CanDBPartition(
   options : {
@@ -122,15 +123,15 @@ shared actor class CanDBPartition(
 
   // Application-specific code //
 
-  public query func getItem(itemId : Nat) : async ?lib.Item {
+  public query func getItem(itemId : Nat) : async ?CanDBHelper.Item {
     let data = _getAttribute({ sk = "i/" # Nat.toText(itemId) }, "i");
-    do ? { lib.deserializeItem(data!) };
+    do ? { CanDBHelper.deserializeItem(data!) };
   };
 
-  public query func getStreams(itemId : Nat, kind : Text) : async ?lib.Streams {
+  public query func getStreams(itemId : Nat, kind : Text) : async ?CanDBHelper.Streams {
     // TODO: Duplicate code
     let data = _getAttribute({ sk = "i/" # Nat.toText(itemId) }, "s" # kind);
-    do ? { lib.deserializeStreams(data!) };
+    do ? { CanDBHelper.deserializeStreams(data!) };
   };
 
   // CanDBMulti //

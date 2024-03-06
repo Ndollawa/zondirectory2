@@ -20,7 +20,7 @@ import Entity "mo:candb/Entity";
 import Reorder "mo:NacDBReorder/Reorder";
 import CanDBIndex "canister:CanDBIndex";
 import NacDBIndex "canister:NacDBIndex";
-import Common "../../../storage/common";
+import CanDBConfig "../../libs/configs/canDB.config";
 import CanDBPartition "../../../storage/CanDBPartition";
 import NacDBPartition "../../../storage/NacDBPartition";
 
@@ -30,7 +30,7 @@ import StableBuffer "mo:StableBuffer/StableBuffer";
 import Itertools "mo:itertools/Iter";
 import MyCycles "mo:nacdb/Cycles";
 
-import lib "../../utils/libs/helpers/canDB.helper";
+import CanDBHelper "../../libs/utils/helpers/canDB.helper";
 import Payments "../payments/main";
 
 // TODO: Delete "hanging" items (as soon, as they found)
@@ -61,13 +61,13 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
 
   public shared ({ caller }) func init(_owners : [Principal]) : async () {
     checkCaller(caller);
-    ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles); // TODO: another number of cycles?
+    ignore MyCycles.topUpCycles(CanDBConfig.dbOptions.partitionCycles); // TODO: another number of cycles?
     if (initialized) {
       Debug.trap("already initialized");
     };
 
     owners := _owners;
-    MyCycles.addPart(Common.dbOptions.partitionCycles);
+    MyCycles.addPart(CanDBConfig.dbOptions.partitionCycles);
     initialized := true;
   };
 
@@ -95,7 +95,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
         0;
       } else {
         let t = scanResult.results[0].0;
-        let n = lib.decodeInt(Text.fromIter(Itertools.takeWhile(t.chars(), func(c : Char) : Bool { c != '#' })));
+        let n = CanDBHelper.decodeInt(Text.fromIter(Itertools.takeWhile(t.chars(), func(c : Char) : Bool { c != '#' })));
         Debug.print("t=" # t # "; n=" # debug_show (n));
         if (side == #end) { n + 1 } else { n - 1 };
       };
@@ -133,11 +133,11 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     let ?folderItemData = await catId1.getAttribute({ sk = "i/" # Nat.toText(catId.1) }, "i") else {
       Debug.trap("cannot get folder item");
     };
-    let folderItem = lib.deserializeItem(folderItemData);
+    let folderItem = CanDBHelper.deserializeItem(folderItemData);
 
     if (not folderItem.item.communal) {
       // TODO: Remove `folderItem.item.details == #folder and`?
-      lib.onlyItemOwner(caller, folderItem);
+      CanDBHelper.onlyItemOwner(caller, folderItem);
     };
     if (folderItem.item.details != #folder and not comment) {
       Debug.trap("not a folder");
@@ -156,7 +156,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     catId : (Principal, Nat),
     itemId : (Principal, Nat),
     comment : Bool,
-    links : lib.StreamsLinks,
+    links : CanDBHelper.StreamsLinks,
     itemId1 : CanDBPartition.CanDBPartition,
     key1 : Text,
     key2 : Text,
@@ -199,8 +199,8 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     };
     await* addItemToList(stream1, itemId, side);
     await* addItemToList(stream2, catId, side);
-    let itemData1 = lib.serializeStreams(Array.freeze(streamsVar1));
-    let itemData2 = lib.serializeStreams(Array.freeze(streamsVar2));
+    let itemData1 = CanDBHelper.serializeStreams(Array.freeze(streamsVar1));
+    let itemData2 = CanDBHelper.serializeStreams(Array.freeze(streamsVar2));
     // Debug.print("ADD STREAM: ");
     await itemId1.putAttribute({
       sk = "i/" # Nat.toText(catId.1);
@@ -214,7 +214,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     });
   };
 
-  func getStreamLinks(/*catId: (Principal, Nat),*/ itemId : (Principal, Nat), comment : Bool) : async* lib.StreamsLinks {
+  func getStreamLinks(/*catId: (Principal, Nat),*/ itemId : (Principal, Nat), comment : Bool) : async* CanDBHelper.StreamsLinks {
     // let catId1: CanDBPartition.CanDBPartition = actor(Principal.toText(catId.0));
     let itemId1 : CanDBPartition.CanDBPartition = actor (Principal.toText(itemId.0));
     // TODO: Ensure that item data is readed once per `addItemToFolder` call.
@@ -222,27 +222,27 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
       // TODO: Keep doing for other folders after a trap?
       Debug.trap("cannot get child item");
     };
-    let childItem = lib.deserializeItem(childItemData);
+    let childItem = CanDBHelper.deserializeItem(childItemData);
 
     if (comment) {
-      lib.STREAM_LINK_COMMENTS;
+      CanDBHelper.STREAM_LINK_COMMENTS;
     } else {
       switch (childItem.item.details) {
-        case (#folder) { lib.STREAM_LINK_SUBFOLDERS };
-        case _ { lib.STREAM_LINK_SUBITEMS };
+        case (#folder) { CanDBHelper.STREAM_LINK_SUBFOLDERS };
+        case _ { CanDBHelper.STREAM_LINK_SUBITEMS };
       };
     };
   };
 
   /// `key1` and `key2` are like `"s"` and `"sr"`
   /// TODO: No need to return an option type
-  func itemsOrder(itemId : (Principal, Nat), key2 : Text) : async* ?lib.Streams {
+  func itemsOrder(itemId : (Principal, Nat), key2 : Text) : async* ?CanDBHelper.Streams {
     let itemId1 : CanDBPartition.CanDBPartition = actor (Principal.toText(itemId.0));
 
     let streamsData = await itemId1.getAttribute({ sk = "i/" # Nat.toText(itemId.1) }, key2);
     let streams = switch (streamsData) {
       case (?data) {
-        lib.deserializeStreams(data);
+        CanDBHelper.deserializeStreams(data);
       };
       case null {
         [null, null, null];
@@ -330,7 +330,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     };
     if (streamsVar[links] == null) {
       streamsVar[links] := ?order;
-      let data = lib.serializeStreams(Array.freeze(streamsVar));
+      let data = CanDBHelper.serializeStreams(Array.freeze(streamsVar));
       await parentCanister.putAttribute({
         sk = "i/" # Nat.toText(parent);
         key = "sv";

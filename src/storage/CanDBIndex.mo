@@ -23,8 +23,8 @@ import Multi "mo:CanDBMulti/Multi";
 import Entity "mo:candb/Entity";
 
 import Canister "mo:matchers/Canister";
-import lib "../backend/utils/libs/helpers/canDB.helper";
-import Conf "../backend/utils/configs/passport.config";
+import CanDBHelper "../backend/libs/utils/helpers/canDB.helper";
+import PassportConfig "../backend/libs/configs/passport.config";
 
 shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
   stable var owners : [Principal] = [initialOwner];
@@ -248,7 +248,7 @@ shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
     await* Multi.putAttributeWithPossibleDuplicate(pkToCanisterMap, pk, options);
   };
 
-  func setVotingDataImpl(user : Principal, partitionId : ?Principal, voting : lib.VotingScore) : async* () {
+  func setVotingDataImpl(user : Principal, partitionId : ?Principal, voting : CanDBHelper.VotingScore) : async* () {
     let sk = "u/" # Principal.toText(user); // TODO: Should use binary encoding.
     // TODO: Add Hint to CanDBMulti
     ignore await* Multi.putAttributeNoDuplicates(
@@ -257,21 +257,21 @@ shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
       {
         sk;
         key = "v";
-        value = lib.serializeVoting(voting);
+        value = CanDBHelper.serializeVoting(voting);
       },
     );
   };
 
-  public shared ({ caller }) func setVotingData(user : Principal, partitionId : ?Principal, voting : lib.VotingScore) : async () {
+  public shared ({ caller }) func setVotingData(user : Principal, partitionId : ?Principal, voting : CanDBHelper.VotingScore) : async () {
     checkCaller(caller); // necessary
     await* setVotingDataImpl(user, partitionId, voting);
   };
 
-  func getVotingData(caller : Principal, partitionId : ?Principal) : async* ?lib.VotingScore {
+  func getVotingData(caller : Principal, partitionId : ?Principal) : async* ?CanDBHelper.VotingScore {
     let sk = "u/" # Principal.toText(caller); // TODO: Should use binary encoding.
     // TODO: Add Hint to CanDBMulti
     let res = await* Multi.getAttributeByHint(pkToCanisterMap, "user", partitionId, { sk; key = "v" });
-    do ? { lib.deserializeVoting(res!.1!) };
+    do ? { CanDBHelper.deserializeVoting(res!.1!) };
   };
 
   func sybilScoreImpl(user : Principal) : async* (Bool, Float) {
@@ -283,7 +283,7 @@ shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
         Debug.print("VOTING: " # debug_show (voting));
         if (
           voting.lastChecked + 150 * 24 * 3600 * 1_000_000_000 >= Time.now() and // TODO: Make configurable.
-          voting.points >= Conf.minimumScore,
+          voting.points >= PassportConfig.minimumScore,
         ) {
           (true, voting.points);
         } else {
@@ -300,7 +300,7 @@ shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
 
   public shared func checkSybil(user : Principal) : async () {
     // checkCaller(user); // TODO: enable?
-    if (Conf.skipSybil) {
+    if (PassportConfig.skipSybil) {
       return;
     };
     let (allowed, score) = await* sybilScoreImpl(user);
