@@ -5,8 +5,8 @@ import Principal "mo:base/Principal";
 import Types "mo:passport-client-dfinity/lib/Types";
 import V "mo:passport-client-dfinity/lib/Verifier";
 
-import CanDBIndex "canister:CanDBIndex";
-import ic_eth "canister:ic_eth";
+import CanDBIndex "ca:CanDBIndex";
+import ic_eth "ca:ic_eth";
 import CanDBHelper "../../libs/utils/helpers/canDB.helper";
 import passportConfig "../../libs/configs/passport.config";
 

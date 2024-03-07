@@ -38,43 +38,43 @@ import Payments "../payments/main";
 shared ({ caller = initialOwner }) actor class Orders() = this {
   stable var owners = [initialOwner];
 
-  func checkCaller(caller: Principal) {
-    if (Array.find(owners, func(e: Principal): Bool { e == caller; }) == null) {
+  func checkCaller(caller : Principal) {
+    if (Array.find(owners, func(e : Principal) : Bool { e == caller }) == null) {
       Debug.trap("order: not allowed");
-    }
+    };
   };
 
-  public shared({caller = caller}) func setOwners(_owners: [Principal]): async () {
+  public shared ({ caller = caller }) func setOwners(_owners : [Principal]) : async () {
     checkCaller(caller);
 
     owners := _owners;
   };
 
-  public query func getOwners(): async [Principal] { owners };
+  public query func getOwners() : async [Principal] { owners };
 
-  stable var initialized: Bool = false;
+  stable var initialized : Bool = false;
 
   // stable var rng: Prng.Seiran128 = Prng.Seiran128(); // WARNING: This is not a cryptographically secure pseudorandom number generator.
   stable let guidGen = GUID.init(Array.tabulate<Nat8>(16, func _ = 0));
 
-  stable let orderer = Reorder.createOrderer({queueLengths = 20});
+  stable let orderer = Reorder.createOrderer({ queueLengths = 20 });
 
-  public shared({ caller }) func init(_owners: [Principal]): async () {
+  public shared ({ caller }) func init(_owners : [Principal]) : async () {
     checkCaller(caller);
-    ignore MyCycles.topUpCycles(Common.dbOptions.partitionCycles); // TODO: another number of cycles?
+    ignore MyCycles.topUpCycles(CanDBConfig.dbOptions.partitionCycles); // TODO: another number of cycles?
     if (initialized) {
-        Debug.trap("already initialized");
+      Debug.trap("already initialized");
     };
 
     owners := _owners;
-    MyCycles.addPart(Common.dbOptions.partitionCycles);
+    MyCycles.addPart(CanDBConfig.dbOptions.partitionCycles);
     initialized := true;
   };
 
-  func addItemToList(theSubDB: Reorder.Order, itemToAdd: (Principal, Nat), side: { #beginning; #end; #zero }): async* () {
+  func addItemToList(theSubDB : Reorder.Order, itemToAdd : (Principal, Nat), side : { #beginning; #end; #zero }) : async* () {
     let scanItemInfo = Nat.toText(itemToAdd.1) # "@" # Principal.toText(itemToAdd.0);
-    let theSubDB2: Nac.OuterCanister = theSubDB.order.0;
-    if (await theSubDB2.hasByOuter({outerKey = theSubDB.reverse.1; sk = scanItemInfo})) {
+    let theSubDB2 : Nac.OuterCanister = theSubDB.order.0;
+    if (await theSubDB2.hasByOuter({ outerKey = theSubDB.reverse.1; sk = scanItemInfo })) {
       return; // prevent duplicate
     };
     // TODO: race
@@ -90,45 +90,52 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
         limit = 1;
         ascending = ?(if (side == #end) { false } else { true });
       });
-      let timeScanSK = if (scanResult.results.size() == 0) { // empty list
+      let timeScanSK = if (scanResult.results.size() == 0) {
+        // empty list
         0;
       } else {
         let t = scanResult.results[0].0;
-        let n = CanDBHelper.decodeInt(Text.fromIter(Itertools.takeWhile(t.chars(), func (c: Char): Bool { c != '#' })));
+        let n = CanDBHelper.decodeInt(Text.fromIter(Itertools.takeWhile(t.chars(), func(c : Char) : Bool { c != '#' })));
         if (side == #end) { n + 1 } else { n - 1 };
       };
       timeScanSK;
     };
-    
+
     let guid = GUID.nextGuid(guidGen);
 
     // TODO: race condition
-    await* Reorder.add(guid, NacDBIndex, orderer, {
-      order = theSubDB;
-      key = timeScanSK;
-      value = scanItemInfo;
-    });
+    await* Reorder.add(
+      guid,
+      NacDBIndex,
+      orderer,
+      {
+        order = theSubDB;
+        key = timeScanSK;
+        value = scanItemInfo;
+      },
+    );
   };
 
   // Public API //
 
-  public shared({caller}) func addItemToFolder(
-    catId: (Principal, Nat),
-    itemId: (Principal, Nat),
-    comment: Bool,
-    side: { #beginning; #end }, // ignored unless adding to an owned folder
-  ): async () {
-    let catId1: CanDBPartition.CanDBPartition = actor(Principal.toText(catId.0));
-    let itemId1: CanDBPartition.CanDBPartition = actor(Principal.toText(itemId.0));
+  public shared ({ caller }) func addItemToFolder(
+    catId : (Principal, Nat),
+    itemId : (Principal, Nat),
+    comment : Bool,
+    side : { #beginning; #end }, // ignored unless adding to an owned folder
+  ) : async () {
+    let catId1 : CanDBPartition.CanDBPartition = actor (Principal.toText(catId.0));
+    let itemId1 : CanDBPartition.CanDBPartition = actor (Principal.toText(itemId.0));
 
     // TODO: Race condition when adding an item.
     // TODO: Ensure that it is retrieved once.
-    let ?folderItemData = await catId1.getAttribute({sk = "i/" # Nat.toText(catId.1)}, "i") else {
+    let ?folderItemData = await catId1.getAttribute({ sk = "i/" # Nat.toText(catId.1) }, "i") else {
       Debug.trap("cannot get folder item");
     };
     let folderItem = CanDBHelper.deserializeItem(folderItemData);
 
-    if (not folderItem.item.communal) { // TODO: Remove `folderItem.item.details == #folder and`?
+    if (not folderItem.item.communal) {
+      // TODO: Remove `folderItem.item.details == #folder and`?
       CanDBHelper.onlyItemOwner(caller, folderItem);
     };
     if (folderItem.item.details != #folder and not comment) {
@@ -145,25 +152,25 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
 
   /// `key1` and `key2` are like `"st"` and `"rst"`
   func addToStreams(
-    catId: (Principal, Nat),
-    itemId: (Principal, Nat),
-    comment: Bool, // FIXME: Use it.
-    links: CanDBHelper.StreamsLinks,
-    itemId1: CanDBPartition.CanDBPartition,
-    key1: Text,
-    key2: Text,
-    side: { #beginning; #end; #zero },
-  ): async* () {
+    catId : (Principal, Nat),
+    itemId : (Principal, Nat),
+    comment : Bool, // FIXME: Use it.
+    links : CanDBHelper.StreamsLinks,
+    itemId1 : CanDBPartition.CanDBPartition,
+    key1 : Text,
+    key2 : Text,
+    side : { #beginning; #end; #zero },
+  ) : async* () {
     // Put into the beginning of time order.
     let streams1 = await* itemsStream(catId, key1);
     let streams2 = await* itemsStream(itemId, key2);
-    let streamsVar1: [var ?Reorder.Order] = switch (streams1) {
+    let streamsVar1 : [var ?Reorder.Order] = switch (streams1) {
       case (?streams) { Array.thaw(streams) };
-      case null { [var null, null, null]};
+      case null { [var null, null, null] };
     };
-    let streamsVar2: [var ?Reorder.Order] = switch (streams2) {
+    let streamsVar2 : [var ?Reorder.Order] = switch (streams2) {
       case (?streams) { Array.thaw(streams) };
-      case null { [var null, null, null]};
+      case null { [var null, null, null] };
     };
     let streams1t = switch (streams1) {
       case (?t) { t[links] };
@@ -193,16 +200,24 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     await* addItemToList(stream2, catId, side);
     let itemData1 = CanDBHelper.serializeStreams(Array.freeze(streamsVar1));
     let itemData2 = CanDBHelper.serializeStreams(Array.freeze(streamsVar2));
-    await itemId1.putAttribute({ sk = "i/" # Nat.toText(catId.1); key = key1; value = itemData1 });
-    await itemId1.putAttribute({ sk = "i/" # Nat.toText(itemId.1); key = key2; value = itemData2 });
+    await itemId1.putAttribute({
+      sk = "i/" # Nat.toText(catId.1);
+      key = key1;
+      value = itemData1;
+    });
+    await itemId1.putAttribute({
+      sk = "i/" # Nat.toText(itemId.1);
+      key = key2;
+      value = itemData2;
+    });
   };
 
-  public shared({caller}) func removeItemLinks(itemId: (Principal, Nat)): async () {
+  public shared ({ caller }) func removeItemLinks(itemId : (Principal, Nat)) : async () {
     // checkCaller(caller); // FIXME: Uncomment.
     await* _removeItemLinks(itemId);
   };
 
-  func _removeItemLinks(itemId: (Principal, Nat)): async* () {
+  func _removeItemLinks(itemId : (Principal, Nat)) : async* () {
     // FIXME: Also delete the other end.
     await* _removeStream("st", itemId);
     await* _removeStream("sv", itemId);
@@ -216,7 +231,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
 
   /// Removes a stream
   /// TODO: Race condition on removing first links in only one direction. Check for more race conditions.
-  func _removeStream(kind: Text, itemId: (Principal, Nat)): async* () {
+  func _removeStream(kind : Text, itemId : (Principal, Nat)) : async* () {
     let directStream = await* itemsStream(itemId, kind);
     switch (directStream) {
       case (?directStream) {
@@ -233,7 +248,13 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
               };
               // Delete links pointing to us:
               // TODO: If more than 100_000?
-              let result = await directOrder.order.0.scanLimitOuter({outerKey = directOrder.order.1; lowerBound = ""; upperBound = "x"; dir = #fwd; limit = 100_000});
+              let result = await directOrder.order.0.scanLimitOuter({
+                outerKey = directOrder.order.1;
+                lowerBound = "";
+                upperBound = "x";
+                dir = #fwd;
+                limit = 100_000;
+              });
               for (p in result.results.vals()) {
                 let #text q = p.1 else {
                   Debug.trap("order: programming error");
@@ -253,7 +274,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
                   case (?reverseStream) {
                     switch (reverseStream[index]) {
                       case (?reverseOrder) {
-                        Debug.print("q=" # q # ", parent=" # debug_show(w1i) # "@" # w2 # ", kind=" # reverseKind);
+                        Debug.print("q=" # q # ", parent=" # debug_show (w1i) # "@" # w2 # ", kind=" # reverseKind);
                         await* Reorder.delete(GUID.nextGuid(guidGen), NacDBIndex, orderer, { order = reverseOrder; value });
                       };
                       case null {};
@@ -263,10 +284,12 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
                 };
               };
               // Delete our own sub-DB (before deleting the item itself):
-              await directOrder.order.0.deleteSubDBOuter({outerKey = directOrder.order.1});
+              await directOrder.order.0.deleteSubDBOuter({
+                outerKey = directOrder.order.1;
+              });
             };
             case null {};
-          }
+          };
         };
       };
       case null {};
@@ -274,13 +297,11 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
 
   };
 
-  func getStreamLinks(/*catId: (Principal, Nat),*/ itemId: (Principal, Nat), comment: Bool)
-    : async* CanDBHelper.StreamsLinks
-  {
+  func getStreamLinks(/*catId: (Principal, Nat),*/ itemId : (Principal, Nat), comment : Bool) : async* CanDBHelper.StreamsLinks {
     // let catId1: CanDBPartition.CanDBPartition = actor(Principal.toText(catId.0));
-    let itemId1: CanDBPartition.CanDBPartition = actor(Principal.toText(itemId.0));
+    let itemId1 : CanDBPartition.CanDBPartition = actor (Principal.toText(itemId.0));
     // TODO: Ensure that item data is readed once per `addItemToFolder` call.
-    let ?childItemData = await itemId1.getAttribute({sk = "i/" # Nat.toText(itemId.1)}, "i") else {
+    let ?childItemData = await itemId1.getAttribute({ sk = "i/" # Nat.toText(itemId.1) }, "i") else {
       // TODO: Keep doing for other folders after a trap?
       Debug.trap("cannot get child item");
     };
@@ -298,15 +319,13 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
 
   /// `key1` and `key2` are like `"st"` and `"rst"`
   /// TODO: No need to return an option type
-  func itemsStream(itemId: (Principal, Nat), key2: Text)
-    : async* ?CanDBHelper.Streams
-  {
-    let itemId1: CanDBPartition.CanDBPartition = actor(Principal.toText(itemId.0));
+  func itemsStream(itemId : (Principal, Nat), key2 : Text) : async* ?CanDBHelper.Streams {
+    let itemId1 : CanDBPartition.CanDBPartition = actor (Principal.toText(itemId.0));
 
-    let streamsData = await itemId1.getAttribute({sk = "i/" # Nat.toText(itemId.1)}, key2);
+    let streamsData = await itemId1.getAttribute({ sk = "i/" # Nat.toText(itemId.1) }, key2);
     let streams = switch (streamsData) {
       case (?data) {
-          CanDBHelper.deserializeStreams(data);
+        CanDBHelper.deserializeStreams(data);
       };
       case null {
         [null, null, null];
@@ -318,7 +337,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
   /// Voting ///
 
   /// `amount == 0` means canceling the vote.
-  public shared({caller}) func vote(parentPrincipal: Principal, parent: Nat, childPrincipal: Principal, child: Nat, value: Int, comment: Bool): async () {
+  public shared ({ caller }) func vote(parentPrincipal : Principal, parent : Nat, childPrincipal : Principal, child : Nat, value : Int, comment : Bool) : async () {
     await CanDBIndex.checkSybil(caller);
     assert value >= -1 and value <= 1;
 
@@ -350,7 +369,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     let (up, down, oldTotalsPrincipal) = switch (oldTotals) {
       case (?(oldTotalsPrincipal, ?(#tuple(a)))) {
         let (#int up, #int down) = (a[0], a[1]) else {
-          Debug.trap("votes programming error")
+          Debug.trap("votes programming error");
         };
         (up, down, ?oldTotalsPrincipal);
       };
@@ -378,12 +397,12 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
       ignore await CanDBIndex.putAttributeNoDuplicates("user", { sk = totalVotesSK; key = "v"; value = #tuple([#int up2, #int down2]) }); // TODO: race condition
     };
 
-    let parentCanister = actor(Principal.toText(parentPrincipal)) : CanDBPartition.CanDBPartition;
+    let parentCanister = actor (Principal.toText(parentPrincipal)) : CanDBPartition.CanDBPartition;
     let links = await* getStreamLinks((childPrincipal, child), comment);
     let streamsData = await* itemsStream((parentPrincipal, parent), "sv");
-    let streamsVar: [var ?Reorder.Order] = switch (streamsData) {
+    let streamsVar : [var ?Reorder.Order] = switch (streamsData) {
       case (?streams) { Array.thaw(streams) };
-      case null { [var null, null, null]};
+      case null { [var null, null, null] };
     };
     let order = switch (streamsVar[links]) {
       case (?order) { order };
@@ -394,15 +413,24 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     if (streamsVar[links] == null) {
       streamsVar[links] := ?order;
       let data = CanDBHelper.serializeStreams(Array.freeze(streamsVar));
-      await parentCanister.putAttribute({ sk = "i/" # Nat.toText(parent); key = "sv"; value = data });
+      await parentCanister.putAttribute({
+        sk = "i/" # Nat.toText(parent);
+        key = "sv";
+        value = data;
+      });
     };
 
-    await* Reorder.move(GUID.nextGuid(guidGen), NacDBIndex, orderer, {
-      order;
-      value = Nat.toText(child) # "@" # Principal.toText(childPrincipal);
-      relative = true;
-      newKey = -difference * 2**16;
-    });
+    await* Reorder.move(
+      GUID.nextGuid(guidGen),
+      NacDBIndex,
+      orderer,
+      {
+        order;
+        value = Nat.toText(child) # "@" # Principal.toText(childPrincipal);
+        relative = true;
+        newKey = -difference * 2 ** 16;
+      },
+    );
   };
 
   // TODO: Below functions?
@@ -413,13 +441,13 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
   //     case _ { Debug.trap("wrong data"); };
   //   }
   // };
-  
+
   // func deserializeVotes(map: Entity.AttributeMap): Float {
   //   let v = RBT.get(map, Text.compare, "v");
   //   switch (v) {
   //     case (?v) { deserializeVoteAttr(v) };
   //     case _ { Debug.trap("map not found") };
-  //   };    
+  //   };
   // };
 
   // TODO: It has race period of duplicate (two) keys. In frontend de-duplicate.
@@ -491,7 +519,7 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
   // public shared({caller}) func oneVotePerPersonVote(sybilCanister: Principal) {
   //   await* checkSybil(sybilCanister, caller);
   //   ignore BTree.insert(userBusyVoting, Principal.compare, caller, ());
-    
+
   //   // setVotes(
   //   //   stream: VotesStream,
   //   //   oldVotesRandom: Text,
