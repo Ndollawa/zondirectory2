@@ -35,8 +35,8 @@ shared actor class CanDBPartition(
 
   func checkCaller(caller : Principal) {
     if (Array.find(owners, func(e : Principal) : Bool { e == caller }) == null) {
-      Debug.print("CanDBParition owners = " # debug_show (owners));
-      Debug.trap("CanDBParition: not allowed");
+      Debug.print("CanDBPartition owners = " # debug_show (owners));
+      Debug.trap("CanDBPartition: not allowed");
     };
   };
 
@@ -82,15 +82,7 @@ shared actor class CanDBPartition(
 
   public shared ({ caller }) func delete(options : CanDB.DeleteOptions) : async () {
     checkCaller(caller);
-
-    CanDB.delete(db, options);
   };
-
-  // public shared({caller}) func remove(options: CanDB.RemoveOptions): async ?Entity.Entity {
-  //   checkCaller(caller);
-
-  //   CanDB.remove(db, options);
-  // };
 
   public query func scan(options : CanDB.ScanOptions) : async CanDB.ScanResult {
     CanDB.scan(db, options);
@@ -130,11 +122,13 @@ shared actor class CanDBPartition(
 
   public query func getStreams(itemId : Nat, kind : Text) : async ?CanDBHelper.Streams {
     // TODO: Duplicate code
-    let data = _getAttribute({ sk = "i/" # Nat.toText(itemId) }, "s" # kind);
+
+    if (kind != "st" and kind != "rst" and kind != "sv" and kind != "rsv") {
+      Debug.trap("wrong streams");
+    };
+    let data = _getAttribute({sk = "i/" # Nat.toText(itemId)}, kind);
     do ? { CanDBHelper.deserializeStreams(data!) };
   };
-
-  // CanDBMulti //
 
   public shared ({ caller }) func putAttribute(options : { sk : Entity.SK; key : Entity.AttributeKey; value : Entity.AttributeValue }) : async () {
     checkCaller(caller);
