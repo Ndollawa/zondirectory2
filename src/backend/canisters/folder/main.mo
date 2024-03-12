@@ -10,13 +10,15 @@ import Token "mo:icrc1/ICRC1/Canisters/Token";
 import BTree "mo:stableheapbtreemap/BTree";
 import ICRC1Types "mo:icrc1/ICRC1/Types";
 import MyCycles "mo:nacdb/Cycles";
+import CanDBIndex "../../../storage/CanDBIndex";
 import CanDBPartition "../../../storage/CanDBPartition";
 
+import { Folder } "types/folder";
 import CanDBConfig "../../libs/configs/canDB.config";
 import CanDBHelper "../../libs/utils/helpers/canDB.helper";
 import fractions "../../libs/utils/helpers/fractions.helper";
 
-shared ({ caller = initialOwner }) actor class Folder() {
+shared ({ caller = initialOwner }) actor class Folder() = this {
 
     // public shared ({ caller }) func find() {};
     // public shared ({ caller }) func findMany() {};

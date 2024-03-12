@@ -1,30 +1,20 @@
 import Principal "mo:base/Principal";
-import Hash "mo:base/Hash";
 import Array "mo:base/Array";
-import Int "mo:base/Int";
-import Iter "mo:base/Iter";
-import Time "mo:base/Time";
 import Debug "mo:base/Debug";
 import Text "mo:base/Text";
-import TrieSet "mo:base/TrieSet";
 import Cycles "mo:base/ExperimentalCycles";
 
-import RBT "mo:stable-rbtree/StableRBTree";
 import CanisterMap "mo:candb/CanisterMap";
 import Buffer "mo:stable-buffer/StableBuffer";
 
 import CA "mo:candb/CanisterActions";
 import Utils "mo:candb/Utils";
 import CanDBPartition "CanDBPartition";
-import CanDBPartition2 "../storage/CanDBPartition";
 import Admin "mo:candb/CanDBAdmin";
 import CanDB "mo:candb/CanDB";
-import Multi "mo:CanDBMulti/Multi";
 import Entity "mo:candb/Entity";
 
 import Canister "mo:matchers/Canister";
-import CanDBHelper "../backend/libs/utils/helpers/canDB.helper";
-import PassportConfig "../backend/libs/configs/passport.config";
 
 shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
   stable var owners : [Principal] = [initialOwner];
@@ -215,97 +205,4 @@ shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
     };
   };
 
-  // CanDBMulti //
-
-  public shared ({ caller }) func getFirstAttribute(
-    pk : Text,
-    options : { sk : Entity.SK; key : Entity.AttributeKey },
-  ) : async ?(Principal, ?Entity.AttributeValue) {
-    await* Multi.getFirstAttribute(pkToCanisterMap, pk, options);
-  };
-
-  public shared ({ caller }) func putAttributeNoDuplicates(
-    pk : Text,
-    options : {
-      sk : Entity.SK;
-      key : Entity.AttributeKey;
-      value : Entity.AttributeValue;
-    },
-  ) : async Principal {
-    checkCaller(caller);
-
-    await* Multi.putAttributeNoDuplicates(pkToCanisterMap, pk, options);
-  };
-
-  public shared ({ caller }) func putAttributeWithPossibleDuplicate(
-    pk : Text,
-    options : {
-      sk : Entity.SK;
-      key : Entity.AttributeKey;
-      value : Entity.AttributeValue;
-    },
-  ) : async Principal {
-    await* Multi.putAttributeWithPossibleDuplicate(pkToCanisterMap, pk, options);
-  };
-
-  func setVotingDataImpl(user : Principal, partitionId : ?Principal, voting : CanDBHelper.VotingScore) : async* () {
-    let sk = "u/" # Principal.toText(user); // TODO: Should use binary encoding.
-    // TODO: Add Hint to CanDBMulti
-    ignore await* Multi.putAttributeNoDuplicates(
-      pkToCanisterMap,
-      "user",
-      {
-        sk;
-        key = "v";
-        value = CanDBHelper.serializeVoting(voting);
-      },
-    );
-  };
-
-  public shared ({ caller }) func setVotingData(user : Principal, partitionId : ?Principal, voting : CanDBHelper.VotingScore) : async () {
-    checkCaller(caller); // necessary
-    await* setVotingDataImpl(user, partitionId, voting);
-  };
-
-  func getVotingData(caller : Principal, partitionId : ?Principal) : async* ?CanDBHelper.VotingScore {
-    let sk = "u/" # Principal.toText(caller); // TODO: Should use binary encoding.
-    // TODO: Add Hint to CanDBMulti
-    let res = await* Multi.getAttributeByHint(pkToCanisterMap, "user", partitionId, { sk; key = "v" });
-    do ? { CanDBHelper.deserializeVoting(res!.1!) };
-  };
-
-  func sybilScoreImpl(user : Principal) : async* (Bool, Float) {
-    // checkCaller(user); // TODO: enable?
-
-    let voting = await* getVotingData(user, null); // TODO: hint `partitionId`, not null
-    switch (voting) {
-      case (?voting) {
-        Debug.print("VOTING: " # debug_show (voting));
-        if (
-          voting.lastChecked + 150 * 24 * 3600 * 1_000_000_000 >= Time.now() and // TODO: Make configurable.
-          voting.points >= PassportConfig.minimumScore,
-        ) {
-          (true, voting.points);
-        } else {
-          (false, 0.0);
-        };
-      };
-      case null { (false, 0.0) };
-    };
-  };
-
-  public shared ({ caller }) func sybilScore() : async (Bool, Float) {
-    await* sybilScoreImpl(caller);
-  };
-
-  public shared func checkSybil(user : Principal) : async () {
-    // checkCaller(user); // TODO: enable?
-    if (PassportConfig.skipSybil) {
-      return;
-    };
-    let (allowed, score) = await* sybilScoreImpl(user);
-    if (not allowed) {
-      Debug.trap("Sybil check failed");
-    };
-  };
 };

@@ -4,6 +4,7 @@
 **/*~
 .~*#
 
+
 # Mac OSX temporary files
 .DS_Store
 **/.DS_Store
@@ -21,7 +22,7 @@ src/declarations/
 our-canisters.json
 
 # frontend code
-node_modules/
+**/node_modules/
 dist/
 
 # environment variables

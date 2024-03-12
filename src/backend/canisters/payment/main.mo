@@ -18,7 +18,7 @@ import CanDBConfig "../../libs/configs/canDB.config";
 import CanDBHelper "../../libs/utils/helpers/canDB.helper";
 import fractions "../../libs/utils/helpers/fractions.helper";
 
-shared ({ caller = initialOwner }) actor class Payments() = this {
+shared ({ caller = initialOwner }) actor class Payment() = this {
   /// Owners ///
 
   stable var initialized : Bool = false;

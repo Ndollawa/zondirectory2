@@ -31,6 +31,7 @@
     "candb-client-typescript": "^0.0.0-alpha.1",
     "crypto-js": "^4.2.0",
     "css-loader": "^6.8.1",
+    "dotenv": "^16.4.5",
     "node-fetch": "^2.7.0",
     "passport_client_dfinity": "https://github.com/vporton/passport-client-dfinity",
     "pem-file": "^1.0.1",

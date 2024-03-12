@@ -12,7 +12,6 @@ import Entity "mo:candb/Entity";
 import CanDB "mo:candb/CanDB";
 import Multi "mo:CanDBMulti/Multi";
 import RBT "mo:stable-rbtree/StableRBTree";
-import CanDBHelper "../backend/libs/utils/helpers/canDB.helper";
 
 shared actor class CanDBPartition(
   options : {
@@ -109,25 +108,7 @@ shared actor class CanDBPartition(
   };
 
   public query func getAttribute(options : CanDB.GetOptions, subkey : Text) : async ?Entity.AttributeValue {
-    // checkCaller(caller);
     _getAttribute(options, subkey);
-  };
-
-  // Application-specific code //
-
-  public query func getItem(itemId : Nat) : async ?CanDBHelper.Item {
-    let data = _getAttribute({ sk = "i/" # Nat.toText(itemId) }, "i");
-    do ? { CanDBHelper.deserializeItem(data!) };
-  };
-
-  public query func getStreams(itemId : Nat, kind : Text) : async ?CanDBHelper.Streams {
-    // TODO: Duplicate code
-
-    if (kind != "st" and kind != "rst" and kind != "sv" and kind != "rsv") {
-      Debug.trap("wrong streams");
-    };
-    let data = _getAttribute({sk = "i/" # Nat.toText(itemId)}, kind);
-    do ? { CanDBHelper.deserializeStreams(data!) };
   };
 
   public shared ({ caller }) func putAttribute(options : { sk : Entity.SK; key : Entity.AttributeKey; value : Entity.AttributeValue }) : async () {
@@ -144,4 +125,38 @@ shared actor class CanDBPartition(
     checkCaller(caller);
     await* Multi.putExistingAttribute(db, options);
   };
+
+  // CanDBMulti //
+
+  public shared ({ caller }) func getFirstAttribute(
+    pk : Text,
+    options : { sk : Entity.SK; key : Entity.AttributeKey },
+  ) : async ?(Principal, ?Entity.AttributeValue) {
+    await* Multi.getFirstAttribute(pkToCanisterMap, pk, options);
+  };
+
+  public shared ({ caller }) func putAttributeNoDuplicates(
+    pk : Text,
+    options : {
+      sk : Entity.SK;
+      key : Entity.AttributeKey;
+      value : Entity.AttributeValue;
+    },
+  ) : async Principal {
+    checkCaller(caller);
+
+    await* Multi.putAttributeNoDuplicates(pkToCanisterMap, pk, options);
+  };
+
+  public shared ({ caller }) func putAttributeWithPossibleDuplicate(
+    pk : Text,
+    options : {
+      sk : Entity.SK;
+      key : Entity.AttributeKey;
+      value : Entity.AttributeValue;
+    },
+  ) : async Principal {
+    await* Multi.putAttributeWithPossibleDuplicate(pkToCanisterMap, pk, options);
+  };
+
 };

@@ -212,10 +212,10 @@ shared ({ caller = initialOwner }) actor class Orders() = this {
     });
   };
 
-  public shared ({ caller }) func removeItemLinks(itemId : (Principal, Nat)) : async () {
-    // checkCaller(caller); // FIXME: Uncomment.
-    await* _removeItemLinks(itemId);
-  };
+  // public shared ({ caller }) func removeItemLinks(itemId : (Principal, Nat)) : async () {
+  //   // checkCaller(caller); // FIXME: Uncomment.
+  //   await* _removeItemLinks(itemId);
+  // };
 
   func _removeItemLinks(itemId : (Principal, Nat)) : async* () {
     // FIXME: Also delete the other end.

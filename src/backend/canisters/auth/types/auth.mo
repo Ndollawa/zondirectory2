@@ -7,17 +7,17 @@ import Time "mo:base/Time";
 import Principal "mo:base/Principal";
 
 module Auth {
-    type User = {
-        id : Principal;
-        // .
-        // .
-        // .
-        // other attributes
-    };
 
-    type User = {
-        id : Principal;
-        userId : Principal;
+  type User = {
+    locale : Text;
+    nick : Text;
+    title : Text;
+    description : Text;
+    // TODO: long description
+    link : Text;
+  };
+
+    type Profile = {
         fisrtName : Text;
         lastName : Text;
         // age:Time.Date;
