@@ -64,15 +64,15 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "dependencies": [],
+      "dependencies": ["backend","internet_identity"],
       "source": [
         "src/frontend/assets",
         "dist/frontend/"
       ],
       "type": "assets"
     },
-    "payment": {
-      "main": "src/backend/canisters/payment/main.mo",
+    "payments": {
+      "main": "src/backend/canisters/payments/main.mo",
       "type": "motoko",
       "dependencies": ["pst"]
     },
@@ -84,12 +84,12 @@
       "main": "src/backend/canisters/auth/main.mo",
       "type": "motoko"
     },
-    "item": {
-      "main": "src/backend/canisters/item/main.mo",
+    "items": {
+      "main": "src/backend/canisters/items/main.mo",
       "type": "motoko"
     },
-    "folder": {
-      "main": "src/backend/canisters/folder/main.mo",
+    "folders": {
+      "main": "src/backend/canisters/folders/main.mo",
       "type": "motoko"
     }
   },
