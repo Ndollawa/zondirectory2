@@ -24,7 +24,6 @@ import Auth "canister:auth";
 import Folder "canister:folder";
 import Vote "canister:vote";
 import Payment "canister:payment";
-import Order "canister:order";
 
 import CanDBHelper "libs/utils/helpers/canDB.helper";
 import CanDBConfig "libs/configs/canDB.config";
