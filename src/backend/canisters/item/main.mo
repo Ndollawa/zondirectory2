@@ -29,7 +29,7 @@ import NacDBPartition "canister:NacDBPartition";
 
 import CanDBConfig "../../libs/configs/canDB.config";
 import CanDBHelper "../../libs/utils/helpers/canDB.helper";
-import fractions "../../libs/utils/helpers/fractions.helper";
+import Fractions "../../libs/utils/helpers/fractions.helper";
 
 import { deserializeItem; serializeItem } = "./types/item";
 import { deserializeStream; serializeStream } = "./types/stream";
