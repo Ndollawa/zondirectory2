@@ -15,6 +15,18 @@
         "NacDBIndex",
         "NacDBPartition"
       ]
+    },  
+    "internet_identity": {
+      "type": "custom",
+      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
+      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
+      "shrink": false,
+      "remote": {
+        "candid": "internet_identity.did",
+        "id": {
+          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      }
     },
     "ic_eth": {
       "type": "rust",
@@ -40,18 +52,6 @@
       "main": "src/storage/NacDBPartition.mo",
       "type": "motoko",
       "dependencies": ["ic_eth"]
-    },  
-    "internet_identity": {
-      "type": "custom",
-      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity_dev.wasm.gz",
-      "shrink": false,
-      "remote": {
-        "candid": "internet_identity.did",
-        "id": {
-          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-        }
-      }
     },
     "personhood": {
       "main": "src/backend/canisters/personhood/main.mo",
@@ -62,7 +62,7 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "dependencies": [],
+      "dependencies": ["internet_identity", "backend"],
       "source": [
         "src/frontend/assets",
         "dist/frontend/"
