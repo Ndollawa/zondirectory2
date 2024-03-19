@@ -4,13 +4,16 @@
       "main": "src/backend/main.mo",
       "type": "motoko",
       "dependencies": [
-        "order",
-        "payments",
+        "payment",
         "personhood",
         "CanDBIndex",
         "NacDBIndex",
         "internet_identity",
-        "ic_eth"
+        "ic_eth",
+        "CanDBIndex",
+        "CanDBPartition",
+        "NacDBIndex",
+        "NacDBPartition"
       ]
     },
     "ic_eth": {
@@ -50,11 +53,6 @@
         }
       }
     },
-    "order": {
-      "main": "src/backend/canisters/order/main.mo",
-      "type": "motoko",
-       "dependencies": ["CanDBIndex"]
-    },
     "personhood": {
       "main": "src/backend/canisters/personhood/main.mo",
       "type": "motoko",
@@ -64,15 +62,15 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "dependencies": ["backend","internet_identity"],
+      "dependencies": [],
       "source": [
         "src/frontend/assets",
         "dist/frontend/"
       ],
       "type": "assets"
     },
-    "payments": {
-      "main": "src/backend/canisters/payments/main.mo",
+    "payment": {
+      "main": "src/backend/canisters/payment/main.mo",
       "type": "motoko",
       "dependencies": ["pst"]
     },
@@ -84,12 +82,13 @@
       "main": "src/backend/canisters/auth/main.mo",
       "type": "motoko"
     },
-    "items": {
-      "main": "src/backend/canisters/items/main.mo",
-      "type": "motoko"
+    "item": {
+      "main": "src/backend/canisters/item/main.mo",
+      "type": "motoko",
+      "dependencies": ["CanDBIndex","CanDBPartition"]
     },
-    "folders": {
-      "main": "src/backend/canisters/folders/main.mo",
+    "folder": {
+      "main": "src/backend/canisters/folder/main.mo",
       "type": "motoko"
     }
   },

@@ -1,7 +1,6 @@
 [dependencies]
 base = "0.10.2"
 candb = "https://github.com/vporton/CanDB#no-blob"
-nacdb = "https://github.com/vporton/NacDB#main"
 stable-rbtree = "1.0.0"
 stable-buffer = "https://github.com/canscale/StableBuffer#v0.2.0"
 stablebuffer = "https://github.com/canscale/StableBuffer#v0.2.0"
@@ -22,6 +21,7 @@ xtended-numbers = "0.2.1"
 NacDBReorder = "https://github.com/vporton/NacDBReorder#v2.0.0@44dda638900a372c93f21a6d1ae76ef84e86b1e5"
 passport-client-dfinity = "https://github.com/vporton/passport-client-dfinity#v0.3.0@894c1f08386d4351834fab3413127f777a2c5955"
 "json.mo" = "https://github.com/vporton/json.mo#main@49612cf3865dc24bca7bb0e8b6fcf275d11a8cb2"
+nacdb = "0.10.17"
 
 [dev-dependencies]
 matchers = "https://github.com/kritzcreek/motoko-matchers#v1.3.0"

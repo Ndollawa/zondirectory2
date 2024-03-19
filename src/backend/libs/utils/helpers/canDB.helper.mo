@@ -1,7 +1,6 @@
 import Text "mo:base/Text";
 import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
-import Principal "mo:base/Principal";
 import Int "mo:base/Int";
 import Nat32 "mo:base/Nat32";
 import Nat8 "mo:base/Nat8";
@@ -10,17 +9,8 @@ import Char "mo:base/Char";
 import Nat64 "mo:base/Nat64";
 import Array "mo:base/Array";
 import Iter "mo:base/Iter";
-import Time "mo:base/Time";
-import Bool "mo:base/Bool";
 
 import xNat "mo:xtendedNumbers/NatX";
-import CM "mo:candb/CanisterMap";
-import Nac "mo:nacdb/NacDB";
-import NacDBPartition "../../../../storage/NacDBPartition";
-import RBT "mo:stable-rbtree/StableRBTree";
-import Entity "mo:candb/Entity";
-import Reorder "mo:NacDBReorder/Reorder";
-import PassportConfig "../../configs/passport.config";
 
 module {
   // let phoneNumberVerificationCanisterId = "gzqxf-kqaaa-aaaak-qakba-cai"; // https://docs.nfid.one/developer/credentials/mobile-phone-number-credential

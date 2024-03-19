@@ -32,7 +32,7 @@ shared actor class CanDBPartition(
     btreeOrder = null;
   });
 
-  func checkCaller(caller : Principal) {
+  func checkCaller(caller : Principal) :async () {
     if (Array.find(owners, func(e : Principal) : Bool { e == caller }) == null) {
       Debug.print("CanDBPartition owners = " # debug_show (owners));
       Debug.trap("CanDBPartition: not allowed");
@@ -40,7 +40,7 @@ shared actor class CanDBPartition(
   };
 
   public shared ({ caller }) func setOwners(_owners : [Principal]) : async () {
-    checkCaller(caller);
+    // checkCaller(caller);
 
     owners := _owners;
   };
@@ -55,23 +55,30 @@ shared actor class CanDBPartition(
     CanDB.skExists(db, sk);
   };
 
+  /// @required public API (Do not delete or change)
+  public shared ({ caller }) func transferCycles() : async () {
+    // checkCaller(caller);
+
+    return await CA.transferCycles(caller);
+  };
+
   public query func get(options : CanDB.GetOptions) : async ?Entity.Entity {
     CanDB.get(db, options);
   };
 
   public shared ({ caller }) func put(options : CanDB.PutOptions) : async () {
-    checkCaller(caller);
+    // checkCaller(caller);
 
     await* CanDB.put(db, options);
   };
 
-  // public shared({caller}) func replace(options: CanDB.ReplaceOptions): async ?Entity.Entity {
-  //   checkCaller(caller);
+  public shared({caller}) func replace(options: CanDB.ReplaceOptions): async ?Entity.Entity {
+    // checkCaller(caller);
 
-  //   await* CanDB.replace(db, options);
-  // };
+    await* CanDB.replace(db, options);
+  };
 
-  // public shared({caller = caller}) func update(options: CanDB.UpdateOptions): async ?Entity.Entity {
+  // public shared({caller}) func update(options: CanDB.UpdateOptions): async ?Entity.Entity {
   //   if (checkCaller(caller)) {
   //     CanDB.update(db, options);
   //   } else {
@@ -80,83 +87,44 @@ shared actor class CanDBPartition(
   // };
 
   public shared ({ caller }) func delete(options : CanDB.DeleteOptions) : async () {
-    checkCaller(caller);
+    // checkCaller(caller);
+    CanDB.delete(db, options);
   };
 
   public query func scan(options : CanDB.ScanOptions) : async CanDB.ScanResult {
     CanDB.scan(db, options);
   };
 
-  /// @required public API (Do not delete or change)
-  public shared ({ caller }) func transferCycles() : async () {
-    checkCaller(caller);
+  public shared({caller}) func tryPut(options: CanDB.PutOptions): async () {
+    // checkCaller(caller);
 
-    return await CA.transferCycles(caller);
+    if (not CanDB.skExists(db, options.sk)) {
+      await* CanDB.put(db, options);
+    };
   };
-
-  // public shared({caller}) func tryPut(options: CanDB.PutOptions): async () {
-  //   checkCaller(caller);
-
-  //   if (not CanDB.skExists(db, options.sk)) {
-  //     await* CanDB.put(db, options);
-  //   };
-  // };
 
   func _getAttribute(options : CanDB.GetOptions, subkey : Text) : ?Entity.AttributeValue {
     let all = CanDB.get(db, options);
     do ? { RBT.get(all!.attributes, Text.compare, subkey)! };
   };
 
-  public query func getAttribute(options : CanDB.GetOptions, subkey : Text) : async ?Entity.AttributeValue {
+  public shared query ({ caller }) func getAttribute(options : CanDB.GetOptions, subkey : Text) : async ?Entity.AttributeValue {
     _getAttribute(options, subkey);
   };
 
   public shared ({ caller }) func putAttribute(options : { sk : Entity.SK; key : Entity.AttributeKey; value : Entity.AttributeValue }) : async () {
-    checkCaller(caller);
+    // checkCaller(caller);
     ignore await* Multi.replaceAttribute(db, options);
   };
 
   public shared ({ caller }) func putExisting(options : CanDB.PutOptions) : async Bool {
-    checkCaller(caller);
+    // checkCaller(caller);
     await* Multi.putExisting(db, options);
   };
 
   public shared ({ caller }) func putExistingAttribute(options : { sk : Entity.SK; key : Entity.AttributeKey; value : Entity.AttributeValue }) : async Bool {
-    checkCaller(caller);
+    // checkCaller(caller);
     await* Multi.putExistingAttribute(db, options);
-  };
-
-  // CanDBMulti //
-
-  public shared ({ caller }) func getFirstAttribute(
-    pk : Text,
-    options : { sk : Entity.SK; key : Entity.AttributeKey },
-  ) : async ?(Principal, ?Entity.AttributeValue) {
-    await* Multi.getFirstAttribute(pkToCanisterMap, pk, options);
-  };
-
-  public shared ({ caller }) func putAttributeNoDuplicates(
-    pk : Text,
-    options : {
-      sk : Entity.SK;
-      key : Entity.AttributeKey;
-      value : Entity.AttributeValue;
-    },
-  ) : async Principal {
-    checkCaller(caller);
-
-    await* Multi.putAttributeNoDuplicates(pkToCanisterMap, pk, options);
-  };
-
-  public shared ({ caller }) func putAttributeWithPossibleDuplicate(
-    pk : Text,
-    options : {
-      sk : Entity.SK;
-      key : Entity.AttributeKey;
-      value : Entity.AttributeValue;
-    },
-  ) : async Principal {
-    await* Multi.putAttributeWithPossibleDuplicate(pkToCanisterMap, pk, options);
   };
 
 };

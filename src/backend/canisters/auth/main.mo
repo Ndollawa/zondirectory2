@@ -13,7 +13,7 @@ import MyCycles "mo:nacdb/Cycles";
 import CanDBPartition "../../../storage/CanDBPartition";
 
 // import PST "canister:pst";
-import {User} "types/auth"
+import { User } = "types/auth";
 
 import CanDBConfig "../../libs/configs/canDB.config";
 import PassportConfig "../../libs/configs/passport.config";
@@ -21,7 +21,7 @@ import CanDBHelper "../../libs/utils/helpers/canDB.helper";
 import fractions "../../libs/utils/helpers/fractions.helper";
 
 shared ({ caller = initialOwner }) actor class Auth() = this {
-    /// Users ///
+  /// Users ///
 
   func serializeUser(user : User) : Entity.AttributeValue {
     var buf = Buffer.Buffer<Entity.AttributeValuePrimitive>(6);
@@ -135,38 +135,38 @@ shared ({ caller = initialOwner }) actor class Auth() = this {
     await db.delete({ sk = key });
   };
 
-    func sybilScoreImpl(user : Principal) : async* (Bool, Float) {
-        // checkCaller(user); // TODO: enable?
+  func sybilScoreImpl(user : Principal) : async* (Bool, Float) {
+    // checkCaller(user); // TODO: enable?
 
-        let voting = await* getVotingData(user, null); // TODO: hint `partitionId`, not null
-        switch (voting) {
-            case (?voting) {
-                Debug.print("VOTING: " # debug_show (voting));
-                if (
-                    voting.lastChecked + 150 * 24 * 3600 * 1_000_000_000 >= Time.now() and // TODO: Make configurable.
-                    voting.points >= PassportConfig.minimumScore,
-                ) {
-                    (true, voting.points);
-                } else {
-                    (false, 0.0);
-                };
-            };
-            case null { (false, 0.0) };
+    let voting = await* getVotingData(user, null); // TODO: hint `partitionId`, not null
+    switch (voting) {
+      case (?voting) {
+        Debug.print("VOTING: " # debug_show (voting));
+        if (
+          voting.lastChecked + 150 * 24 * 3600 * 1_000_000_000 >= Time.now() and // TODO: Make configurable.
+          voting.points >= PassportConfig.minimumScore,
+        ) {
+          (true, voting.points);
+        } else {
+          (false, 0.0);
         };
+      };
+      case null { (false, 0.0) };
     };
+  };
 
-    public shared ({ caller }) func sybilScore() : async (Bool, Float) {
-        await* sybilScoreImpl(caller);
-    };
+  public shared ({ caller }) func sybilScore() : async (Bool, Float) {
+    await* sybilScoreImpl(caller);
+  };
 
-    public shared func checkSybil(user : Principal) : async () {
-        // checkCaller(user); // TODO: enable?
-        if (PassportConfig.skipSybil) {
-            return;
-        };
-        let (allowed, score) = await* sybilScoreImpl(user);
-        if (not allowed) {
-            Debug.trap("Sybil check failed");
-        };
+  public shared func checkSybil(user : Principal) : async () {
+    // checkCaller(user); // TODO: enable?
+    if (PassportConfig.skipSybil) {
+      return;
     };
+    let (allowed, score) = await* sybilScoreImpl(user);
+    if (not allowed) {
+      Debug.trap("Sybil check failed");
+    };
+  };
 };

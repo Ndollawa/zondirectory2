@@ -9,6 +9,7 @@ import Buffer "mo:stable-buffer/StableBuffer";
 
 import CA "mo:candb/CanisterActions";
 import Utils "mo:candb/Utils";
+import Multi "mo:CanDBMulti/Multi";
 import CanDBPartition "CanDBPartition";
 import Admin "mo:candb/CanDBAdmin";
 import CanDB "mo:candb/CanDB";
@@ -203,6 +204,38 @@ shared ({ caller = initialOwner }) actor class CanDBIndex() = this {
         ?(actor (newStorageCanisterId) : CanDBPartition.CanDBPartition);
       };
     };
+  };
+  // CanDBMulti //
+
+  public shared ({ caller }) func getFirstAttribute(
+    pk : Text,
+    options : { sk : Entity.SK; key : Entity.AttributeKey },
+  ) : async ?(Principal, ?Entity.AttributeValue) {
+    await* Multi.getFirstAttribute(pkToCanisterMap, pk, options);
+  };
+
+  public shared ({ caller }) func putAttributeNoDuplicates(
+    pk : Text,
+    options : {
+      sk : Entity.SK;
+      key : Entity.AttributeKey;
+      value : Entity.AttributeValue;
+    },
+  ) : async Principal {
+    checkCaller(caller);
+
+    await* Multi.putAttributeNoDuplicates(pkToCanisterMap, pk, options);
+  };
+
+  public shared ({ caller }) func putAttributeWithPossibleDuplicate(
+    pk : Text,
+    options : {
+      sk : Entity.SK;
+      key : Entity.AttributeKey;
+      value : Entity.AttributeValue;
+    },
+  ) : async Principal {
+    await* Multi.putAttributeWithPossibleDuplicate(pkToCanisterMap, pk, options);
   };
 
 };

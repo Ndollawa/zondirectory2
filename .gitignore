@@ -23,6 +23,7 @@ our-canisters.json
 # frontend code
 node_modules/
 src/**/node_modules/
+src/frontend/next/
 dist/
 
 # environment variables
