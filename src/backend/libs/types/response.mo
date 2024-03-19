@@ -5,6 +5,7 @@ import Text "mo:base/Text";
 // import Buffer "mo:base/Buffer";
 
 module {
+
     public type Success<T> = {
         status : Text;
         statusCode : Nat;
@@ -19,5 +20,34 @@ module {
         // path : Text;
         timestamp : Time.Time;
     };
+
+    public shared query ({caller}) func getSuccessResponse<T>(data:T, statusCode:Nat,message:?Text){
+        let msg = switch(message) {
+            case(null) {return "Request was successful." };
+            case(?value) { return value  };
+        };
+        let res:Success<T> = {
+                status : "Success";
+                statusCode : statusCode;
+                message : msg;
+                timestamp : Time.now();
+                data : data;
+        };
+        return res;
+    };
+
+    public shared ({caller}) func getErrorResponse<T>(data:T, statusCode:Nat,message:?Text){
+        let msg = switch(message) {
+                    case(null) {return "Request was Unsuccessful." };
+                    case(?value) { return value  };
+                };
+                let res:Error = {
+                        status : "Error";
+                        statusCode : statusCode;
+                        message : msg;
+                        timestamp : Time.now();
+                };
+                return res;
+            };
 
 };

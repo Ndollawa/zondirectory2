@@ -85,7 +85,11 @@
     "item": {
       "main": "src/backend/canisters/item/main.mo",
       "type": "motoko",
-      "dependencies": ["CanDBIndex","CanDBPartition"]
+      "dependencies": [
+        "CanDBIndex",
+        "CanDBPartition",
+        "NacDBIndex",
+        "NacDBPartition"]
     },
     "folder": {
       "main": "src/backend/canisters/folder/main.mo",

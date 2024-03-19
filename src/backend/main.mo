@@ -7,6 +7,7 @@ import Buffer "mo:base/Buffer";
 import Int "mo:base/Int";
 import Nat64 "mo:base/Nat64";
 import Time "mo:base/Time";
+import Result "mo:base/Result";
 
 import BTree "mo:stableheapbtreemap/BTree";
 import RBT "mo:stable-rbtree/StableRBTree";
@@ -28,6 +29,7 @@ import Payment "canister:payment";
 import CanDBHelper "libs/utils/helpers/canDB.helper";
 import CanDBConfig "libs/configs/canDB.config";
 import PassportConfig "libs/configs/passport.config";
+import {getSuccessResponse;getErrorResponse,Success;Error } = "libs/types/response";
 
 shared ({ caller = owner }) actor class ZonBackend() = this {
   /// External Canisters ///
@@ -94,7 +96,8 @@ shared ({ caller = owner }) actor class ZonBackend() = this {
     };
   };
 
-  /// Items Endpoints ///
+  /// Items Endpoints ///  
+  // Transform response  for all endpoints @example : async Result<(Success<(Principal, Nat)), (Error)>
 
   public shared ({ caller }) func createItemData(item : ItemWithoutOwner) : async (Principal, Nat) {
     await ItemService.createItemData(item);
